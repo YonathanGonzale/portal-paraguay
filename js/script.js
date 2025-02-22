@@ -56,10 +56,10 @@ let esperandoTipoUsuario = false;
 function hablar(texto) {
     const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = 'es-ES';
-    utterance.rate = 0.9;
+    utterance.rate = 1.1; 
     utterance.pitch = 1;
     utterance.volume = 1;
-    speechSynthesis.cancel();
+    speechSynthesis.cancel(); 
     speechSynthesis.speak(utterance);
 }
 
@@ -211,10 +211,13 @@ function iniciarReconocimientoVoz() {
 
     const recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true; 
+    recognition.maxAlternatives = 1; 
     recognition.lang = 'es-ES';
 
     let mensajeInicial = true;
+    let ultimoComando = '';
+    let ultimoTiempo = Date.now();
 
     recognition.onstart = () => {
         console.log('Reconocimiento de voz iniciado');
@@ -232,26 +235,52 @@ function iniciarReconocimientoVoz() {
         if (event.error === 'not-allowed') {
             hablar("Por favor, permite el acceso al micrófono para poder escuchar tus comandos.");
         }
-        // Reintentar si hay un error
-        setTimeout(() => recognition.start(), 100);
+        setTimeout(() => recognition.start(), 50); 
     };
 
     recognition.onresult = (event) => {
-        const comando = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-        procesarComando(comando);
+        const resultado = event.results[event.results.length - 1];
+        if (resultado.isFinal) {
+            const comando = resultado[0].transcript.toLowerCase().trim();
+            
+            // Evitar procesamiento duplicado de comandos
+            const tiempoActual = Date.now();
+            if (comando !== ultimoComando || tiempoActual - ultimoTiempo > 1000) {
+                ultimoComando = comando;
+                ultimoTiempo = tiempoActual;
+                procesarComando(comando);
+            }
+        }
     };
+
+    // Función para reiniciar el reconocimiento
+    function reiniciarReconocimiento() {
+        try {
+            recognition.stop();
+            setTimeout(() => recognition.start(), 50);
+        } catch (error) {
+            console.error('Error al reiniciar el reconocimiento:', error);
+            setTimeout(reiniciarReconocimiento, 50);
+        }
+    }
+
+    // Manejar pérdida de conexión
+    window.addEventListener('offline', () => {
+        reiniciarReconocimiento();
+    });
+
+    // Manejar recuperación de conexión
+    window.addEventListener('online', () => {
+        reiniciarReconocimiento();
+    });
 
     try {
         recognition.start();
     } catch (error) {
         console.error('Error al iniciar el reconocimiento:', error);
-        // Reintentar si hay un error
-        setTimeout(() => recognition.start(), 100);
+        setTimeout(() => recognition.start(), 50);
     }
 }
 
 // Inicializar cuando el documento esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    // Iniciar reconocimiento inmediatamente
-    iniciarReconocimientoVoz();
-});
+document.addEventListener('DOMContentLoaded', iniciarReconocimientoVoz);
