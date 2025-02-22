@@ -39,37 +39,150 @@ const secciones = {
     }
 };
 
-// Mensajes del sistema
+// Mensajes del asistente
 const mensajes = {
-    inicial: "Hola, di hola para comenzar",
-    bienvenida: "Bienvenido al portal. Puedes decir: contenido, documentos, trámites, estadísticas, transmisiones, aplicaciones, inicio o repetir",
-    noReconocido: "No entendí el comando. Por favor, intenta de nuevo."
+    inicial: "Bienvenido al Portal Paraguay Accesible. Di 'hola' para comenzar.",
+    bienvenida: "Por favor, dime si eres una persona daltónica o una persona ciega, para adaptar la interfaz a tus necesidades.",
+    comandosGenerales: "Los comandos disponibles son: 'contenido' para escuchar la descripción actual, 'documentos', 'trámites', 'estadísticas', 'transmisiones', 'aplicaciones', 'inicio', 'repetir' para repetir la información, y 'ayuda' para escuchar nuevamente los comandos.",
+    modosDaltonismo: "Puedes usar los siguientes modos de visualización: 'normal' para vista normal, 'rojo' si tienes dificultad con el rojo, 'verde' si tienes dificultad con el verde, 'azul' si tienes dificultad con el azul, o 'contraste' para alto contraste. Di 'modos' para escuchar nuevamente las opciones.",
+    noReconocido: "No entendí el comando. Di 'ayuda' para escuchar los comandos disponibles."
 };
 
 // Cache de utterances para mejorar velocidad
 const utteranceCache = {};
+
+// Estado del asistente
+let seccionActual = 'inicio';
+let esperandoAsistente = true;
+let esperandoTipoUsuario = false;
+let esDaltonico = false;
+let esCiego = false;
 
 // Función para hablar optimizada
 function hablar(texto) {
     if (!utteranceCache[texto]) {
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'es-ES';
-        utterance.rate = 1.2; 
+        utterance.rate = 1.2; // Velocidad optimizada
         utterance.pitch = 1;
         utterance.volume = 1;
         utteranceCache[texto] = utterance;
     }
     
-    speechSynthesis.cancel(); 
+    speechSynthesis.cancel();
     speechSynthesis.speak(utteranceCache[texto]);
 }
 
-// Estado del asistente
-let seccionActual = 'inicio';
-let esperandoAsistente = true;
-let esperandoTipoUsuario = false;
+// Función para cambiar el modo de visualización
+function cambiarModoVisualizacion(modo) {
+    const imagen = document.getElementById('imagen-principal');
+    imagen.classList.remove('protanopia', 'deuteranopia', 'tritanopia', 'alto-contraste');
+    
+    if (modo) {
+        imagen.classList.add(modo);
+        const descripciones = {
+            'protanopia': 'Modo adaptado para protanopia (dificultad para ver el color rojo)',
+            'deuteranopia': 'Modo adaptado para deuteranopia (dificultad para ver el color verde)',
+            'tritanopia': 'Modo adaptado para tritanopia (dificultad para ver el color azul)',
+            'alto-contraste': 'Modo de alto contraste para mejor visibilidad'
+        };
+        setTimeout(() => hablar(descripciones[modo]), 10);
+    }
+}
 
-// Configurar reconocimiento de voz
+// Optimizar cambio de sección
+function cambiarSeccion(nuevaSeccion) {
+    if (secciones[nuevaSeccion]) {
+        seccionActual = nuevaSeccion;
+        imagenPrincipal.src = imagenes[nuevaSeccion];
+        
+        const mensaje = `${secciones[nuevaSeccion].titulo}. ${secciones[nuevaSeccion].contenido}`;
+        setTimeout(() => hablar(mensaje), 10);
+    }
+}
+
+// Optimizar procesamiento de comandos
+function procesarComando(comando) {
+    console.log('Comando recibido:', comando);
+
+    // Esperar el comando inicial
+    if (esperandoAsistente) {
+        if (comando.includes('hola')) {
+            esperandoAsistente = false;
+            esperandoTipoUsuario = true;
+            setTimeout(() => hablar(mensajes.bienvenida), 10);
+        }
+        return;
+    }
+
+    // Identificar tipo de usuario
+    if (esperandoTipoUsuario) {
+        if (comando.includes('daltónico') || comando.includes('daltonico')) {
+            esDaltonico = true;
+            esperandoTipoUsuario = false;
+            setTimeout(() => hablar(mensajes.modosDaltonismo), 10);
+        } else if (comando.includes('ciego')) {
+            esCiego = true;
+            esperandoTipoUsuario = false;
+            setTimeout(() => hablar(mensajes.comandosGenerales), 10);
+        }
+        return;
+    }
+
+    // Procesar comandos específicos
+    switch(true) {
+        case comando.includes('ayuda'):
+            setTimeout(() => hablar(mensajes.comandosGenerales), 10);
+            break;
+
+        case comando.includes('modos'):
+            setTimeout(() => hablar(mensajes.modosDaltonismo), 10);
+            break;
+
+        case comando.includes('normal'):
+            cambiarModoVisualizacion(null);
+            break;
+
+        case comando.includes('rojo'):
+            cambiarModoVisualizacion('protanopia');
+            break;
+
+        case comando.includes('verde'):
+            cambiarModoVisualizacion('deuteranopia');
+            break;
+
+        case comando.includes('azul'):
+            cambiarModoVisualizacion('tritanopia');
+            break;
+
+        case comando.includes('contraste'):
+            cambiarModoVisualizacion('alto-contraste');
+            break;
+
+        case comando.includes('contenido'):
+        case comando.includes('documentos'):
+        case comando.includes('trámites'):
+        case comando.includes('estadísticas'):
+        case comando.includes('transmisiones'):
+        case comando.includes('aplicaciones'):
+        case comando.includes('inicio'):
+            cambiarSeccion(comando);
+            break;
+
+        case comando.includes('repetir'):
+            if (seccionActual) {
+                cambiarSeccion(seccionActual);
+            }
+            break;
+
+        default:
+            if (comando.length > 0) {
+                setTimeout(() => hablar(mensajes.noReconocido), 10);
+            }
+    }
+}
+
+// Configurar reconocimiento de voz optimizado
 function iniciarReconocimientoVoz() {
     if (!('webkitSpeechRecognition' in window)) {
         hablar("Tu navegador no es compatible con el reconocimiento de voz. Por favor, usa Chrome.");
@@ -77,9 +190,9 @@ function iniciarReconocimientoVoz() {
     }
 
     const recognition = new webkitSpeechRecognition();
-    recognition.continuous = false; 
-    recognition.interimResults = true; 
-    recognition.maxAlternatives = 1; 
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
     recognition.lang = 'es-ES';
 
     let mensajeInicial = true;
@@ -87,7 +200,7 @@ function iniciarReconocimientoVoz() {
 
     recognition.onstart = () => {
         if (mensajeInicial) {
-            setTimeout(() => hablar(mensajes.inicial), 100);
+            setTimeout(() => hablar(mensajes.inicial), 10);
             mensajeInicial = false;
         }
     };
@@ -111,10 +224,8 @@ function iniciarReconocimientoVoz() {
             const comando = resultado[0].transcript.toLowerCase().trim();
             procesandoComando = true;
             
-            // Procesar comando inmediatamente
             procesarComando(comando);
             
-            // Reiniciar reconocimiento después de procesar
             recognition.stop();
             procesandoComando = false;
             setTimeout(() => recognition.start(), 10);
@@ -129,53 +240,9 @@ function iniciarReconocimientoVoz() {
     }
 }
 
-// Optimizar cambio de sección
-function cambiarSeccion(nuevaSeccion) {
-    if (secciones[nuevaSeccion]) {
-        seccionActual = nuevaSeccion;
-        imagenPrincipal.src = imagenes[nuevaSeccion];
-        
-        // Preparar el mensaje antes de hablarlo
-        const mensaje = `${secciones[nuevaSeccion].titulo}. ${secciones[nuevaSeccion].contenido}`;
-        setTimeout(() => hablar(mensaje), 10);
-    }
-}
-
-// Optimizar procesamiento de comandos
-function procesarComando(comando) {
-    console.log('Comando recibido:', comando);
-    
-    if (comando.includes('hola')) {
-        hablar(mensajes.bienvenida);
-        return;
-    }
-
-    // Procesamiento inmediato de comandos
-    switch(true) {
-        case comando.includes('contenido'):
-        case comando.includes('documentos'):
-        case comando.includes('trámites'):
-        case comando.includes('estadísticas'):
-        case comando.includes('transmisiones'):
-        case comando.includes('aplicaciones'):
-        case comando.includes('inicio'):
-            cambiarSeccion(comando);
-            break;
-        case comando.includes('repetir'):
-            if (seccionActual) {
-                cambiarSeccion(seccionActual);
-            }
-            break;
-        default:
-            if (comando.length > 0) {
-                hablar(mensajes.noReconocido);
-            }
-    }
-}
-
-// Iniciar inmediatamente cuando el documento esté listo
+// Iniciar cuando el documento esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    // Precarga de imágenes para mejorar rendimiento
+    // Precarga de imágenes
     Object.values(imagenes).forEach(src => {
         const img = new Image();
         img.src = src;
