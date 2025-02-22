@@ -86,7 +86,7 @@ function cambiarModoVisualizacion(modo) {
             'tritanopia': 'Modo adaptado para tritanopia (dificultad para ver el color azul)',
             'alto-contraste': 'Modo de alto contraste para mejor visibilidad'
         };
-        setTimeout(() => hablar(descripciones[modo]), 10);
+        setTimeout(() => hablar(descripciones[modo]), 10000);
     }
 }
 
@@ -97,7 +97,7 @@ function cambiarSeccion(nuevaSeccion) {
         imagenPrincipal.src = imagenes[nuevaSeccion];
         
         const mensaje = `${secciones[nuevaSeccion].titulo}. ${secciones[nuevaSeccion].contenido}`;
-        setTimeout(() => hablar(mensaje), 10);
+        setTimeout(() => hablar(mensaje), 10000);
     }
 }
 
@@ -110,7 +110,7 @@ function procesarComando(comando) {
         if (comando.includes('hola')) {
             esperandoAsistente = false;
             esperandoTipoUsuario = true;
-            setTimeout(() => hablar(mensajes.bienvenida), 10);
+            setTimeout(() => hablar(mensajes.bienvenida), 10000);
         }
         return;
     }
@@ -120,11 +120,11 @@ function procesarComando(comando) {
         if (comando.includes('daltónico') || comando.includes('daltonico')) {
             esDaltonico = true;
             esperandoTipoUsuario = false;
-            setTimeout(() => hablar(mensajes.modosDaltonismo), 10);
+            setTimeout(() => hablar(mensajes.modosDaltonismo), 10000);
         } else if (comando.includes('ciego')) {
             esCiego = true;
             esperandoTipoUsuario = false;
-            setTimeout(() => hablar(mensajes.comandosGenerales), 10);
+            setTimeout(() => hablar(mensajes.comandosGenerales), 10000);
         }
         return;
     }
@@ -132,11 +132,11 @@ function procesarComando(comando) {
     // Procesar comandos específicos
     switch(true) {
         case comando.includes('ayuda'):
-            setTimeout(() => hablar(mensajes.comandosGenerales), 10);
+            setTimeout(() => hablar(mensajes.comandosGenerales), 10000);
             break;
 
         case comando.includes('modos'):
-            setTimeout(() => hablar(mensajes.modosDaltonismo), 10);
+            setTimeout(() => hablar(mensajes.modosDaltonismo), 10000);
             break;
 
         case comando.includes('normal'):
@@ -177,76 +177,109 @@ function procesarComando(comando) {
 
         default:
             if (comando.length > 0) {
-                setTimeout(() => hablar(mensajes.noReconocido), 10);
+                setTimeout(() => hablar(mensajes.noReconocido), 10000);
             }
     }
 }
 
-// Configurar reconocimiento de voz optimizado
+// Inicialización temprana del reconocimiento de voz
+let recognition = null;
+
+// Función para iniciar el reconocimiento de voz
 function iniciarReconocimientoVoz() {
+    console.log('Iniciando reconocimiento de voz...');
+    
     if (!('webkitSpeechRecognition' in window)) {
+        console.error('Navegador no compatible con reconocimiento de voz');
         hablar("Tu navegador no es compatible con el reconocimiento de voz. Por favor, usa Chrome.");
         return;
     }
 
-    const recognition = new webkitSpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    recognition.lang = 'es-ES';
-
-    let mensajeInicial = true;
-    let procesandoComando = false;
-
-    recognition.onstart = () => {
-        if (mensajeInicial) {
-            setTimeout(() => hablar(mensajes.inicial), 10);
-            mensajeInicial = false;
-        }
-    };
-
-    recognition.onend = () => {
-        if (!procesandoComando) {
-            setTimeout(() => recognition.start(), 10);
-        }
-    };
-
-    recognition.onerror = (event) => {
-        if (event.error === 'not-allowed') {
-            hablar("Por favor, permite el acceso al micrófono para poder escuchar tus comandos.");
-        }
-        setTimeout(() => recognition.start(), 10);
-    };
-
-    recognition.onresult = (event) => {
-        const resultado = event.results[event.results.length - 1];
-        if (resultado.isFinal) {
-            const comando = resultado[0].transcript.toLowerCase().trim();
-            procesandoComando = true;
-            
-            procesarComando(comando);
-            
-            recognition.stop();
-            procesandoComando = false;
-            setTimeout(() => recognition.start(), 10);
-        }
-    };
-
     try {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        recognition.lang = 'es-ES';
+
+        let mensajeInicial = true;
+        let procesandoComando = false;
+
+        recognition.onstart = () => {
+            console.log('Reconocimiento de voz iniciado correctamente');
+            if (mensajeInicial) {
+                hablar(mensajes.inicial);
+                mensajeInicial = false;
+            }
+        };
+
+        recognition.onend = () => {
+            console.log('Reconocimiento de voz terminado - reiniciando...');
+            if (!procesandoComando) {
+                setTimeout(() => {
+                    try {
+                        recognition.start();
+                        console.log('Reconocimiento reiniciado');
+                    } catch (error) {
+                        console.error('Error al reiniciar:', error);
+                    }
+                }, 1000);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Error en reconocimiento:', event.error);
+            if (event.error === 'not-allowed') {
+                hablar("Por favor, permite el acceso al micrófono para poder escuchar tus comandos.");
+            }
+            setTimeout(() => {
+                try {
+                    recognition.start();
+                    console.log('Reconocimiento reiniciado después de error');
+                } catch (error) {
+                    console.error('Error al reiniciar después de error:', error);
+                }
+            }, 1000);
+        };
+
+        recognition.onresult = (event) => {
+            const resultado = event.results[event.results.length - 1];
+            if (resultado.isFinal) {
+                const comando = resultado[0].transcript.toLowerCase().trim();
+                console.log('Comando detectado:', comando);
+                procesandoComando = true;
+                
+                procesarComando(comando);
+                
+                recognition.stop();
+                procesandoComando = false;
+                setTimeout(() => {
+                    try {
+                        recognition.start();
+                        console.log('Reconocimiento reiniciado después de comando');
+                    } catch (error) {
+                        console.error('Error al reiniciar después de comando:', error);
+                    }
+                }, 1000);
+            }
+        };
+
+        console.log('Iniciando primera escucha...');
         recognition.start();
     } catch (error) {
-        console.error('Error al iniciar el reconocimiento:', error);
-        setTimeout(() => recognition.start(), 10);
+        console.error('Error al configurar el reconocimiento:', error);
     }
 }
 
-// Iniciar cuando el documento esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    // Precarga de imágenes
-    Object.values(imagenes).forEach(src => {
-        const img = new Image();
-        img.src = src;
-    });
-    
+// Iniciar tan pronto como sea posible
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarReconocimientoVoz);
+} else {
     iniciarReconocimientoVoz();
+}
+
+// Precarga de imágenes
+Object.values(imagenes).forEach(src => {
+    const img = new Image();
+    img.src = src;
 });
