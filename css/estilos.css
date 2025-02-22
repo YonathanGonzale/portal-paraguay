@@ -1,0 +1,227 @@
+/* css/estilos.css */
+
+/* Estilo general */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    background-color: #0066cc;
+    color: white;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2em;
+}
+
+main {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.contenedor {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    padding: 30px;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.imagen {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+    filter: saturate(150%) contrast(110%);
+}
+
+.icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icono-imagen {
+    width: 100px;
+    height: 100px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.icono-imagen:hover {
+    transform: scale(1.1);
+}
+
+#galeria-imagenes {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+#galeria-imagenes img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: none;
+}
+
+#galeria-imagenes img.activa {
+    display: block;
+}
+
+.controles {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+.estado {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+#estado-reconocimiento {
+    font-weight: bold;
+    color: #2ecc71;
+}
+
+#estado-reconocimiento.error {
+    color: #e74c3c;
+}
+
+ul {
+    background-color: #f8f9fa;
+    padding: 20px 40px;
+    border-radius: 4px;
+}
+
+li {
+    margin: 10px 0;
+    color: #34495e;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #333;
+    color: white;
+    margin-top: auto;
+}
+
+/* Clases para diferentes tipos de daltonismo */
+.protanopia {
+    filter: saturate(150%) contrast(110%) hue-rotate(-20deg);
+}
+
+.deuteranopia {
+    filter: saturate(150%) contrast(110%) hue-rotate(20deg);
+}
+
+.tritanopia {
+    filter: saturate(150%) brightness(105%) contrast(110%);
+}
+
+.alto-contraste {
+    filter: contrast(150%) brightness(120%) grayscale(100%);
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.5em;
+    }
+
+    main {
+        padding: 10px;
+    }
+
+    section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .contenedor {
+        margin: 10px 0;
+    }
+
+    .imagen {
+        margin: 10px 0;
+    }
+}
+
+/* Optimizaciones para dispositivos móviles */
+@media (max-width: 480px) {
+    header {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 1.2em;
+    }
+
+    main {
+        padding: 8px;
+    }
+
+    section {
+        padding: 12px;
+        margin-bottom: 15px;
+    }
+
+    p {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+}
+
+/* Mejoras de accesibilidad */
+:focus {
+    outline: 3px solid #0066cc;
+    outline-offset: 2px;
+}
+
+/* Prevenir selección de texto no deseada en móviles */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
