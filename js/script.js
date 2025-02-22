@@ -214,21 +214,26 @@ function iniciarReconocimientoVoz() {
     recognition.interimResults = false;
     recognition.lang = 'es-ES';
 
+    let mensajeInicial = true;
+
     recognition.onstart = () => {
         console.log('Reconocimiento de voz iniciado');
-        if (esperandoAsistente) {
+        if (mensajeInicial) {
             hablar(mensajes.inicial);
+            mensajeInicial = false;
         }
     };
 
     recognition.onend = () => {
-        setTimeout(() => recognition.start(), 1000);
+        recognition.start();
     };
 
     recognition.onerror = (event) => {
         if (event.error === 'not-allowed') {
             hablar("Por favor, permite el acceso al micrófono para poder escuchar tus comandos.");
         }
+        // Reintentar si hay un error
+        setTimeout(() => recognition.start(), 100);
     };
 
     recognition.onresult = (event) => {
@@ -240,12 +245,13 @@ function iniciarReconocimientoVoz() {
         recognition.start();
     } catch (error) {
         console.error('Error al iniciar el reconocimiento:', error);
+        // Reintentar si hay un error
+        setTimeout(() => recognition.start(), 100);
     }
 }
 
 // Inicializar cuando el documento esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        iniciarReconocimientoVoz();
-    }, 1000);
+    // Iniciar reconocimiento inmediatamente
+    iniciarReconocimientoVoz();
 });
